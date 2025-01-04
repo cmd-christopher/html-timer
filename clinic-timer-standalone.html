@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Timer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: black;
+            color: white;
+        }
+        .timer-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .reset-all {
+            color: #ff4444;
+            border: none;
+            background: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .add-button {
+            color: #007AFF;
+            border: none;
+            background: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        .timer-card {
+            background-color: #1c1c1e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .timer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 14px;
+        }
+        .status-ready {
+            background-color: rgba(128, 128, 128, 0.2);
+            color: #888;
+        }
+        .status-running {
+            background-color: rgba(52, 199, 89, 0.2);
+            color: #34c759;
+        }
+        .status-paused {
+            background-color: rgba(255, 204, 0, 0.2);
+            color: #ffd60a;
+        }
+        .timer-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .time {
+            font-size: 32px;
+            font-family: monospace;
+            color: #888;
+        }
+        .time.running {
+            color: white;
+        }
+        .complexity {
+            text-align: right;
+            margin-right: 16px;
+        }
+        .complexity-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+        .complexity-label {
+            color: #888;
+            font-size: 12px;
+        }
+        .complexity-value {
+            font-weight: bold;
+        }
+        .extended-code {
+            color: #ffd60a;
+            font-size: 12px;
+        }
+        .play-button {
+            background: none;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            padding: 0;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-button.running {
+            color: #ffd60a;
+        }
+        .play-button.stopped {
+            color: #34c759;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background-color: #1c1c1e;
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .input {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0 16px;
+            background-color: #2c2c2e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+        .button {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .button.cancel {
+            color: #888;
+        }
+        .button.confirm {
+            color: #007AFF;
+            font-weight: bold;
+        }
+        .button.delete {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .timer-card:hover .actions {
+            opacity: 1;
+        }
+        .action-button {
+            color: #ff4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function App() {
+            const initialTimers = [
+                '8:30', '9:00', '9:30', '10:00', '10:30', '11:00', '11:30', 
+                '1:00', '1:30', '2:00', '2:30', '3:00', '3:30', 'Phone'
+            ].map(name => ({
+                id: Math.random().toString(36).substr(2, 9),
+                name,
+                elapsedTime: 0,
+                isRunning: false,
+                isPaused: false
+            }));
+
+            const [timers, setTimers] = React.useState(() => {
+                const saved = localStorage.getItem('timers');
+                return saved ? JSON.parse(saved) : initialTimers;
+            });
+            const [showAddTimer, setShowAddTimer] = React.useState(false);
+            const [showResetConfirmation, setShowResetConfirmation] = React.useState(false);
+
+            React.useEffect(() => {
+                localStorage.setItem('timers', JSON.stringify(timers));
+            }, [timers]);
+
+            React.useEffect(() => {
+                const interval = setInterval(() => {
+                    setTimers(prevTimers => 
+                        prevTimers.map(timer => {
+                            if (timer.isRunning && !timer.isPaused) {
+                                return {...timer, elapsedTime: timer.elapsedTime + 1};
+                            }
+                            return timer;
+                        })
+                    );
+                }, 1000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const addTimer = (name) => {
+                setTimers([...timers, {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name,
+                    elapsedTime: 0,
+                    isRunning: false,
+                    isPaused: false
+                }]);
+            };
+
+            const deleteTimer = (id) => {
+                setTimers(timers.filter(timer => timer.id !== id));
+            };
+
+            const resetTimer = (id) => {
+                setTimers(timers.map(timer => 
+                    timer.id === id ? {...timer, elapsedTime: 0, isRunning: false, isPaused: false} : timer
+                ));
+            };
+
+            const toggleTimer = (id) => {
+                setTimers(timers.map(timer => {
+                    if (timer.id === id) {
+                        if (!timer.isRunning) {
+                            return {...timer, isRunning: true, isPaused: false};
+                        } else {
+                            return {...timer, isPaused: !timer.isPaused};
+                        }
+                    }
+                    return timer;
+                }));
+            };
+
+            const resetAllTimers = () => {
+                setTimers(timers.map(timer => ({
+                    ...timer,
+                    elapsedTime: 0,
+                    isRunning: false,
+                    isPaused: false
+                })));
+            };
+
+            const formatTime = (seconds) => {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const remainingSeconds = seconds % 60;
+                
+                if (hours > 0) {
+                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+                }
+                return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            };
+
+            const getComplexityCode = (timer, type) => {
+                const minutes = Math.floor(timer.elapsedTime / 60);
+                const isPhone = timer.name.toLowerCase().includes('phone');
+                
+                if (isPhone) {
+                    if (minutes <= 10) return 1;
+                    if (minutes <= 20) return 2;
+                    return 3;
+                }
+                
+                if (type === 'EST') {
+                    if (minutes <= 10) return 1;
+                    if (minutes <= 20) return 2;
+                    if (minutes <= 30) return 3;
+                    if (minutes <= 40) return 4;
+                    return 5;
+                } else {
+                    if (minutes <= 20) return 1;
+                    if (minutes <= 30) return 2;
+                    if (minutes <= 45) return 3;
+                    if (minutes <= 60) return 4;
+                    return 5;
+                }
+            };
+
+            const get99417Multiplier = (timer, type) => {
+                const minutes = Math.floor(timer.elapsedTime / 60);
+                const threshold = type === 'NEW' ? 75 : 55;
+                if (timer.name.toLowerCase().includes('phone')) return 0;
+                if (minutes <= threshold) return 0;
+                return Math.ceil((minutes - threshold) / 15);
+            };
+
+            return (
+                <div className="timer-container">
+                    <div className="header">
+                        <button className="reset-all" onClick={() => setShowResetConfirmation(true)}>
+                            Reset All
+                        </button>
+                        <div>
+                            <button className="add-button" onClick={() => setShowAddTimer(true)}>
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    {timers.map(timer => (
+                        <div key={timer.id} className="timer-card">
+                            <div className="timer-header">
+                                <span>{timer.name}</span>
+                                <span className={`status-badge ${
+                                    !timer.isRunning ? 'status-ready' :
+                                    timer.isPaused ? 'status-paused' :
+                                    'status-running'
+                                }`}>
+                                    {!timer.isRunning ? 'Ready' : timer.isPaused ? 'Paused' : 'Running'}
+                                </span>
+                            </div>
+                            
+                            <div className="timer-display">
+                                <span className={`time ${timer.isRunning && !timer.isPaused ? 'running' : ''}`}>
+                                    {formatTime(timer.elapsedTime)}
+                                </span>
+                                
+                                <div style={{display: 'flex', alignItems: 'center'}}>
+                                    {!timer.name.toLowerCase().includes('phone') ? (
+                                        <div className="complexity">
+                                            <div className="complexity-row">
+                                                {get99417Multiplier(timer, 'EST') > 0 && (
+                                                    <span className="extended-code">
+                                                        99417 {get99417Multiplier(timer, 'EST') > 1 ? `x ${get99417Multiplier(timer, 'EST')}` : ''}
+                                                    </span>
+                                                )}
+                                                <span className="complexity-label">EST</span>
+                                                <span className="complexity-value">{getComplexityCode(timer, 'EST')}</span>
+                                            </div>
+                                            <div className="complexity-row">
+                                                {get99417Multiplier(timer, 'NEW') > 0 && (
+                                                    <span className="extended-code">
+                                                        99417 {get99417Multiplier(timer, 'NEW') > 1 ? `x ${get99417Multiplier(timer, 'NEW')}` : ''}
+                                                    </span>
+                                                )}
+                                                <span className="complexity-label">NEW</span>
+                                                <span className="complexity-value">{getComplexityCode(timer, 'NEW')}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="complexity">
+                                            <div className="complexity-row">
+                                                <span className="complexity-label">📞</span>
+                                                <span className="complexity-value">{getComplexityCode(timer, 'PHONE')}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <button
+                                        className={`play-button ${timer.isRunning && !timer.isPaused ? 'running' : 'stopped'}`}
+                                        onClick={() => toggleTimer(timer.id)}
+                                    >
+                                        {timer.isRunning && !timer.isPaused ? '⏸' : '▶️'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="actions">
+                                <button className="action-button" onClick={() => resetTimer(timer.id)}>↺</button>
+                                <button className="action-button" onClick={() => deleteTimer(timer.id)}>🗑</button>
+                            </div>
+                        </div>
+                    ))}
+
+                    {showAddTimer && (
+                        <div className="modal">
+                            <div className="modal-content">
+                                <h2>New Timer</h2>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const name = e.target.timerName.value;
+                                    if (name) {
+                                        addTimer(name);
+                                        setShowAddTimer(false);
+                                    }
+                                }}>
+                                    <input
+                                        name="timerName"
+                                        className="input"
+                                        placeholder="Timer Name"
+                                        autoFocus
+                                    />
+                                    <div className="button-group">
+                                        <button
+                                            type="button"
+                                            className="button cancel"
+                                            onClick={() => setShowAddTimer(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="button confirm">
+                                            Add
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                )}
+
+                {showResetConfirmation && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <h2>Reset All Timers?</h2>
+                            <p style={{color: '#888', marginBottom: '20px'}}>
+                                This will reset all active timers to zero. This action cannot be undone.
+                            </p>
+                            <div className="button-group">
+                                <button
+                                    className="button cancel"
+                                    onClick={() => setShowResetConfirmation(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="button delete"
+                                    onClick={() => {
+                                        resetAllTimers();
+                                        setShowResetConfirmation(false);
+                                    }}
+                                >
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Render the App
+    ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
