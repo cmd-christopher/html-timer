@@ -67,3 +67,6 @@ The 99417 extended code is displayed when the time exceeds the threshold for new
 ## License
 
 This project is licensed under the MIT License.
+
+<img width="711" alt="Screenshot 2025-01-04 at 5 54 11 PM" src="https://github.com/user-attachments/assets/c3c92802-ca69-446b-8235-bb01537c4093" />
+
