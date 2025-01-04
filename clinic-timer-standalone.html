@@ -106,7 +106,7 @@
         .play-button {
             background: none;
             border: none;
-            font-size: 32px;
+            font-size: 0; /* Hide the text */
             cursor: pointer;
             padding: 0;
             width: 44px;
@@ -115,11 +115,27 @@
             align-items: center;
             justify-content: center;
         }
-        .play-button.running {
-            color: #ffd60a;
+        .play-button::before {
+            content: "";
+            display: block;
+            width: 0;
+            height: 0;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 20px solid #34c759; /* Green triangle */
         }
-        .play-button.stopped {
-            color: #34c759;
+        .play-button.running::before {
+            content: "⏸";
+            font-size: 32px;
+            border: none;
+            color: #ffd60a;
+            border-left: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-button.stopped::before {
+            border-left-color: #34c759; /* Green triangle when stopped */
         }
         .modal {
             position: fixed;
