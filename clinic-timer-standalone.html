@@ -45,6 +45,16 @@
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
+            cursor: grab;
+            user-select: none;
+            position: relative;
+        }
+        .timer-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        .timer-card.drag-over {
+            border: 2px solid #007AFF;
         }
         .timer-header {
             display: flex;
@@ -354,7 +364,45 @@
                     </div>
 
                     {timers.map(timer => (
-                        <div key={timer.id} className="timer-card">
+                        <div 
+                            key={timer.id} 
+                            className="timer-card"
+                            draggable="true"
+                            onDragStart={(e) => {
+                                e.currentTarget.classList.add('dragging');
+                                e.dataTransfer.setData('text/plain', timer.id);
+                            }}
+                            onDragEnd={(e) => {
+                                e.currentTarget.classList.remove('dragging');
+                                document.querySelectorAll('.timer-card').forEach(card => {
+                                    card.classList.remove('drag-over');
+                                });
+                            }}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                e.currentTarget.classList.add('drag-over');
+                            }}
+                            onDragLeave={(e) => {
+                                e.currentTarget.classList.remove('drag-over');
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                e.currentTarget.classList.remove('drag-over');
+                                const draggedId = e.dataTransfer.getData('text/plain');
+                                const dropId = timer.id;
+                                
+                                if (draggedId !== dropId) {
+                                    const draggedIndex = timers.findIndex(t => t.id === draggedId);
+                                    const dropIndex = timers.findIndex(t => t.id === dropId);
+                                    
+                                    const newTimers = [...timers];
+                                    const [draggedTimer] = newTimers.splice(draggedIndex, 1);
+                                    newTimers.splice(dropIndex, 0, draggedTimer);
+                                    
+                                    setTimers(newTimers);
+                                }
+                            }}
+                        >
                             <div className="timer-header">
                                 <span>{timer.name}</span>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
