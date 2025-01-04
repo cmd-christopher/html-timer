@@ -188,6 +188,12 @@
             border: none;
             cursor: pointer;
             padding: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 18px;
+        }
+        .timer-card:hover .action-button {
+            opacity: 1;
         }
     </style>
 </head>
@@ -335,13 +341,17 @@
                         <div key={timer.id} className="timer-card">
                             <div className="timer-header">
                                 <span>{timer.name}</span>
-                                <span className={`status-badge ${
-                                    !timer.isRunning ? 'status-ready' :
-                                    timer.isPaused ? 'status-paused' :
-                                    'status-running'
-                                }`}>
-                                    {!timer.isRunning ? 'Ready' : timer.isPaused ? 'Paused' : 'Running'}
-                                </span>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <button className="action-button" onClick={() => resetTimer(timer.id)}>↺</button>
+                                    <button className="action-button" onClick={() => deleteTimer(timer.id)}>🗑</button>
+                                    <span className={`status-badge ${
+                                        !timer.isRunning ? 'status-ready' :
+                                        timer.isPaused ? 'status-paused' :
+                                        'status-running'
+                                    }`}>
+                                        {!timer.isRunning ? 'Ready' : timer.isPaused ? 'Paused' : 'Running'}
+                                    </span>
+                                </div>
                             </div>
                             
                             <div className="timer-display">
@@ -387,11 +397,6 @@
                                         {timer.isRunning && !timer.isPaused ? '⏸' : '▶️'}
                                     </button>
                                 </div>
-                            </div>
-
-                            <div className="actions">
-                                <button className="action-button" onClick={() => resetTimer(timer.id)}>↺</button>
-                                <button className="action-button" onClick={() => deleteTimer(timer.id)}>🗑</button>
                             </div>
                         </div>
                     ))}
