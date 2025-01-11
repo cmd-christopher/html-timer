@@ -1,6 +1,6 @@
 # Clinic Timer
 
-This is a simple HTML-based application designed to help outpatient clinicians time their patient encounters. It also calculates the appropriate level of visit for new or established patients based on time-based visit coding.
+This is an HTML-based application designed to help outpatient clinicians time their patient encounters. It also calculates the appropriate level of visit for new or established patients based on time-based visit coding.
 
 ## Features
 
