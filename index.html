@@ -40,14 +40,28 @@
             cursor: pointer;
             padding: 5px;
         }
+        .reorder-button {
+            color: #007AFF;
+            border: none;
+            background: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        .reorder-button.active {
+            font-weight: bold;
+        }
         .timer-card {
             background-color: #1c1c1e;
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
-            cursor: grab;
+            cursor: pointer;
             user-select: none;
             position: relative;
+        }
+        .timer-card[draggable="true"] {
+            cursor: grab;
         }
         .timer-card.dragging {
             opacity: 0.5;
@@ -350,11 +364,23 @@
                 return Math.ceil((minutes - threshold) / 15);
             };
 
+            const [isReorderMode, setIsReorderMode] = React.useState(false);
+
+            const toggleReorderMode = () => {
+                setIsReorderMode(!isReorderMode);
+            };
+
             return (
                 <div className="timer-container">
                     <div className="header">
                         <button className="reset-all" onClick={() => setShowResetConfirmation(true)}>
                             Reset All
+                        </button>
+                        <button 
+                            className={`reorder-button ${isReorderMode ? 'active' : ''}`}
+                            onClick={toggleReorderMode}
+                        >
+                            Reorder
                         </button>
                         <div>
                             <button className="add-button" onClick={() => setShowAddTimer(true)}>
@@ -367,39 +393,54 @@
                         <div 
                             key={timer.id} 
                             className="timer-card"
-                            draggable="true"
+                            draggable={isReorderMode}
                             onDragStart={(e) => {
-                                e.currentTarget.classList.add('dragging');
-                                e.dataTransfer.setData('text/plain', timer.id);
+                                if (isReorderMode) {
+                                    e.currentTarget.classList.add('dragging');
+                                    e.dataTransfer.setData('text/plain', timer.id);
+                                }
                             }}
                             onDragEnd={(e) => {
-                                e.currentTarget.classList.remove('dragging');
-                                document.querySelectorAll('.timer-card').forEach(card => {
-                                    card.classList.remove('drag-over');
-                                });
+                                if (isReorderMode) {
+                                    e.currentTarget.classList.remove('dragging');
+                                    document.querySelectorAll('.timer-card').forEach(card => {
+                                        card.classList.remove('drag-over');
+                                    });
+                                }
                             }}
                             onDragOver={(e) => {
-                                e.preventDefault();
-                                e.currentTarget.classList.add('drag-over');
+                                if (isReorderMode) {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.add('drag-over');
+                                }
                             }}
                             onDragLeave={(e) => {
-                                e.currentTarget.classList.remove('drag-over');
+                                if (isReorderMode) {
+                                    e.currentTarget.classList.remove('drag-over');
+                                }
                             }}
                             onDrop={(e) => {
-                                e.preventDefault();
-                                e.currentTarget.classList.remove('drag-over');
-                                const draggedId = e.dataTransfer.getData('text/plain');
-                                const dropId = timer.id;
-                                
-                                if (draggedId !== dropId) {
-                                    const draggedIndex = timers.findIndex(t => t.id === draggedId);
-                                    const dropIndex = timers.findIndex(t => t.id === dropId);
+                                if (isReorderMode) {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.remove('drag-over');
+                                    const draggedId = e.dataTransfer.getData('text/plain');
+                                    const dropId = timer.id;
                                     
-                                    const newTimers = [...timers];
-                                    const [draggedTimer] = newTimers.splice(draggedIndex, 1);
-                                    newTimers.splice(dropIndex, 0, draggedTimer);
-                                    
-                                    setTimers(newTimers);
+                                    if (draggedId !== dropId) {
+                                        const draggedIndex = timers.findIndex(t => t.id === draggedId);
+                                        const dropIndex = timers.findIndex(t => t.id === dropId);
+                                        
+                                        const newTimers = [...timers];
+                                        const [draggedTimer] = newTimers.splice(draggedIndex, 1);
+                                        newTimers.splice(dropIndex, 0, draggedTimer);
+                                        
+                                        setTimers(newTimers);
+                                    }
+                                }
+                            }}
+                            onClick={(e) => {
+                                if (!isReorderMode && !e.target.closest('.action-button')) {
+                                    toggleTimer(timer.id);
                                 }
                             }}
                         >
