@@ -227,11 +227,6 @@
             display: flex;
             gap: 8px;
             margin-top: 8px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .timer-card:hover .actions {
-            opacity: 1;
         }
         .action-button {
             color: #ff4444;
@@ -239,12 +234,31 @@
             border: none;
             cursor: pointer;
             padding: 4px;
-            opacity: 0;
-            transition: opacity 0.2s;
             font-size: 18px;
         }
-        .timer-card:hover .action-button {
-            opacity: 1;
+        @media (hover: hover) {
+            .actions {
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .timer-card:hover .actions {
+                opacity: 1;
+            }
+            .action-button {
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .timer-card:hover .action-button {
+                opacity: 1;
+            }
+        }
+        @media (hover: none) {
+            .actions {
+                display: none;
+            }
+            .timer-card.has-elapsed-time .actions {
+                display: flex;
+            }
         }
     </style>
 </head>
@@ -452,6 +466,10 @@
                             onClick={(e) => {
                                 if (!isReorderMode && !e.target.closest('.action-button')) {
                                     toggleTimer(timer.id);
+                                    // On mobile, show actions if timer has elapsed time
+                                    if (window.matchMedia('(hover: none)').matches && timer.elapsedTime > 0) {
+                                        e.currentTarget.classList.add('has-elapsed-time');
+                                    }
                                 }
                             }}
                         >
