@@ -279,7 +279,15 @@
 
             const [timers, setTimers] = React.useState(() => {
                 const saved = localStorage.getItem('timers');
-                return saved ? JSON.parse(saved) : initialTimers;
+                const timers = saved ? JSON.parse(saved) : initialTimers;
+                // Calculate elapsed time for running timers based on their start time
+                return timers.map(timer => {
+                    if (timer.isRunning && !timer.isPaused && timer.startTime) {
+                        const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+                        return {...timer, elapsedTime: elapsed};
+                    }
+                    return timer;
+                });
             });
             const [showAddTimer, setShowAddTimer] = React.useState(false);
             const [showResetConfirmation, setShowResetConfirmation] = React.useState(false);
@@ -290,17 +298,38 @@
             }, [timers]);
 
             React.useEffect(() => {
+                const handleVisibilityChange = () => {
+                    if (document.visibilityState === 'visible') {
+                        setTimers(prevTimers => 
+                            prevTimers.map(timer => {
+                                if (timer.isRunning && !timer.isPaused && timer.startTime) {
+                                    const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+                                    return {...timer, elapsedTime: elapsed};
+                                }
+                                return timer;
+                            })
+                        );
+                    }
+                };
+
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                
                 const interval = setInterval(() => {
                     setTimers(prevTimers => 
                         prevTimers.map(timer => {
-                            if (timer.isRunning && !timer.isPaused) {
-                                return {...timer, elapsedTime: timer.elapsedTime + 1};
+                            if (timer.isRunning && !timer.isPaused && timer.startTime) {
+                                const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+                                return {...timer, elapsedTime: elapsed};
                             }
                             return timer;
                         })
                     );
                 }, 1000);
-                return () => clearInterval(interval);
+
+                return () => {
+                    document.removeEventListener('visibilitychange', handleVisibilityChange);
+                    clearInterval(interval);
+                };
             }, []);
 
             const addTimer = (name) => {
@@ -327,9 +356,13 @@
                 setTimers(timers.map(timer => {
                     if (timer.id === id) {
                         if (!timer.isRunning) {
-                            return {...timer, isRunning: true, isPaused: false};
+                            // Start timer - set start time and calculate elapsed time
+                            const startTime = Date.now() - (timer.elapsedTime * 1000);
+                            return {...timer, isRunning: true, isPaused: false, startTime};
                         } else {
-                            return {...timer, isPaused: !timer.isPaused};
+                            // Pause/unpause timer - update start time to account for paused time
+                            const newStartTime = timer.isPaused ? Date.now() - (timer.elapsedTime * 1000) : timer.startTime;
+                            return {...timer, isPaused: !timer.isPaused, startTime: newStartTime};
                         }
                     }
                     return timer;
