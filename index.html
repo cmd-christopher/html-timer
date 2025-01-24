@@ -400,17 +400,17 @@
                 }
                 
                 if (type === 'EST') {
-                    if (minutes <= 10) return 1;
-                    if (minutes <= 20) return 2;
-                    if (minutes <= 30) return 3;
-                    if (minutes <= 40) return 4;
-                    return 5;
+                    if (minutes <= 10) return 0;
+                    if (minutes <= 20) return 98004;
+                    if (minutes <= 30) return 98005;
+                    if (minutes <= 40) return 98006;
+                    return 98007;
                 } else {
-                    if (minutes <= 20) return 1;
-                    if (minutes <= 30) return 2;
-                    if (minutes <= 45) return 3;
-                    if (minutes <= 60) return 4;
-                    return 5;
+                    if (minutes <= 15) return 0;
+                    if (minutes <= 30) return 98000;
+                    if (minutes <= 45) return 98001;
+                    if (minutes <= 60) return 98002;
+                    return 98003;
                 }
             };
 
