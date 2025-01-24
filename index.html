@@ -394,9 +394,17 @@
                 const isPhone = timer.name.toLowerCase().includes('phone');
                 
                 if (isPhone) {
-                    if (minutes <= 10) return 1;
-                    if (minutes <= 20) return 2;
-                    return 3;
+                    if (type === 'EST') {
+                        if (minutes <= 9) return 0;
+                        if (minutes <= 19) return 98012;
+                        if (minutes <= 29) return 98013;
+                        return 98014;
+                    } else { // NEW
+                        if (minutes <= 14) return 0;
+                        if (minutes <= 29) return 98009;
+                        if (minutes <= 44) return 98010;
+                        return 98011;
+                    }
                 }
                 
                 if (type === 'EST') {
@@ -527,35 +535,26 @@
                                 </span>
                                 
                                 <div style={{display: 'flex', alignItems: 'center'}}>
-                                    {!timer.name.toLowerCase().includes('phone') ? (
-                                        <div className="complexity">
-                                            <div className="complexity-row">
-                                                {get99417Multiplier(timer, 'EST') > 0 && (
-                                                    <span className="extended-code">
-                                                        99417 {get99417Multiplier(timer, 'EST') > 1 ? `x ${get99417Multiplier(timer, 'EST')}` : ''}
-                                                    </span>
-                                                )}
-                                                <span className="complexity-label">EST</span>
-                                                <span className="complexity-value">{getComplexityCode(timer, 'EST')}</span>
-                                            </div>
-                                            <div className="complexity-row">
-                                                {get99417Multiplier(timer, 'NEW') > 0 && (
-                                                    <span className="extended-code">
-                                                        99417 {get99417Multiplier(timer, 'NEW') > 1 ? `x ${get99417Multiplier(timer, 'NEW')}` : ''}
-                                                    </span>
-                                                )}
-                                                <span className="complexity-label">NEW</span>
-                                                <span className="complexity-value">{getComplexityCode(timer, 'NEW')}</span>
-                                            </div>
+                                    <div className="complexity">
+                                        <div className="complexity-row">
+                                            {get99417Multiplier(timer, 'EST') > 0 && (
+                                                <span className="extended-code">
+                                                    99417 {get99417Multiplier(timer, 'EST') > 1 ? `x ${get99417Multiplier(timer, 'EST')}` : ''}
+                                                </span>
+                                            )}
+                                            <span className="complexity-label">EST</span>
+                                            <span className="complexity-value">{getComplexityCode(timer, 'EST')}</span>
                                         </div>
-                                    ) : (
-                                        <div className="complexity">
-                                            <div className="complexity-row">
-                                                <span className="complexity-label">📞</span>
-                                                <span className="complexity-value">{getComplexityCode(timer, 'PHONE')}</span>
-                                            </div>
+                                        <div className="complexity-row">
+                                            {get99417Multiplier(timer, 'NEW') > 0 && (
+                                                <span className="extended-code">
+                                                    99417 {get99417Multiplier(timer, 'NEW') > 1 ? `x ${get99417Multiplier(timer, 'NEW')}` : ''}
+                                                </span>
+                                            )}
+                                            <span className="complexity-label">NEW</span>
+                                            <span className="complexity-value">{getComplexityCode(timer, 'NEW')}</span>
                                         </div>
-                                    )}
+                                    </div>
                                     
                                     <button
                                         className={`play-button ${timer.isRunning && !timer.isPaused ? 'running' : 'stopped'}`}
