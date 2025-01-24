@@ -425,7 +425,6 @@
             const get99417Multiplier = (timer, type) => {
                 const minutes = Math.floor(timer.elapsedTime / 60);
                 const threshold = type === 'NEW' ? 75 : 55;
-                if (timer.name.toLowerCase().includes('phone')) return 0;
                 if (minutes <= threshold) return 0;
                 return Math.ceil((minutes - threshold) / 15);
             };
