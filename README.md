@@ -15,7 +15,7 @@ This is an HTML-based application designed to help outpatient clinicians time th
 
 ## How to Use
 
-1.  Open the `clinic-timer-standalone.html` file in your web browser.
+1.  Open the `index.html` file in your web browser.
 2.  Click the play button (▶️) to start a timer.
 3.  Click the pause button (⏸) to pause a timer.
 4.  Click the reset button (↺) to reset a timer to zero.
