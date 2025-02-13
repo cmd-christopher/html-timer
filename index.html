@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.9.0/NoSleep.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap');
 
@@ -112,7 +113,7 @@
             font-weight: 500;
             color: #888;
             letter-spacing: 0.07em;
-            padding-left: 0.07em; /* Compensate for extra spacing */
+            padding-left: 0.07em;
         }
         .time.running {
             color: white;
@@ -141,7 +142,7 @@
         .play-button {
             background: none;
             border: none;
-            font-size: 0; /* Hide the text */
+            font-size: 0;
             cursor: pointer;
             padding: 0;
             width: 44px;
@@ -157,20 +158,19 @@
             height: 0;
             border-top: 12px solid transparent;
             border-bottom: 12px solid transparent;
-            border-left: 20px solid #34c759; /* Green triangle */
+            border-left: 20px solid #34c759;
         }
         .play-button.running::before {
             content: "⏸";
             font-size: 32px;
             border: none;
             color: #ffd60a;
-            border-left: none;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .play-button.stopped::before {
-            border-left-color: #34c759; /* Green triangle when stopped */
+            border-left-color: #34c759;
         }
         .modal {
             position: fixed;
@@ -263,8 +263,12 @@
     </style>
 </head>
 <body>
+    <!-- Removed separate "Keep Screen Awake" button to activate wake lock on timer tap -->
     <div id="root"></div>
     <script type="text/babel">
+        const noSleep = new NoSleep();
+        let wakeLockEnabled = false;  // Global flag to track if wake lock is enabled
+
         function App() {
             const initialTimers = [
                 '8:30', '9:00', '9:30', '10:00', '10:30', '11:00', '11:30', 
@@ -280,11 +284,10 @@
             const [timers, setTimers] = React.useState(() => {
                 const saved = localStorage.getItem('timers');
                 const timers = saved ? JSON.parse(saved) : initialTimers;
-                // Calculate elapsed time for running timers based on their start time
                 return timers.map(timer => {
                     if (timer.isRunning && !timer.isPaused && timer.startTime) {
                         const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-                        return {...timer, elapsedTime: elapsed};
+                        return { ...timer, elapsedTime: elapsed };
                     }
                     return timer;
                 });
@@ -304,7 +307,7 @@
                             prevTimers.map(timer => {
                                 if (timer.isRunning && !timer.isPaused && timer.startTime) {
                                     const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-                                    return {...timer, elapsedTime: elapsed};
+                                    return { ...timer, elapsedTime: elapsed };
                                 }
                                 return timer;
                             })
@@ -319,7 +322,7 @@
                         prevTimers.map(timer => {
                             if (timer.isRunning && !timer.isPaused && timer.startTime) {
                                 const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-                                return {...timer, elapsedTime: elapsed};
+                                return { ...timer, elapsedTime: elapsed };
                             }
                             return timer;
                         })
@@ -348,21 +351,24 @@
 
             const resetTimer = (id) => {
                 setTimers(timers.map(timer => 
-                    timer.id === id ? {...timer, elapsedTime: 0, isRunning: false, isPaused: false} : timer
+                    timer.id === id ? { ...timer, elapsedTime: 0, isRunning: false, isPaused: false } : timer
                 ));
             };
 
             const toggleTimer = (id) => {
+                // Enable wake lock if it hasn't been enabled already
+                if (!wakeLockEnabled) {
+                    noSleep.enable();
+                    wakeLockEnabled = true;
+                }
                 setTimers(timers.map(timer => {
                     if (timer.id === id) {
                         if (!timer.isRunning) {
-                            // Start timer - set start time and calculate elapsed time
                             const startTime = Date.now() - (timer.elapsedTime * 1000);
-                            return {...timer, isRunning: true, isPaused: false, startTime};
+                            return { ...timer, isRunning: true, isPaused: false, startTime };
                         } else {
-                            // Pause/unpause timer - update start time to account for paused time
                             const newStartTime = timer.isPaused ? Date.now() - (timer.elapsedTime * 1000) : timer.startTime;
-                            return {...timer, isPaused: !timer.isPaused, startTime: newStartTime};
+                            return { ...timer, isPaused: !timer.isPaused, startTime: newStartTime };
                         }
                     }
                     return timer;
@@ -399,7 +405,7 @@
                         if (minutes <= 19) return 98012;
                         if (minutes <= 29) return 98013;
                         return 98014;
-                    } else { // NEW
+                    } else {
                         if (minutes <= 14) return 0;
                         if (minutes <= 29) return 98009;
                         if (minutes <= 44) return 98010;
@@ -506,7 +512,6 @@
                             onClick={(e) => {
                                 if (!isReorderMode && !e.target.closest('.action-button')) {
                                     toggleTimer(timer.id);
-                                    // On mobile, show actions if timer has elapsed time
                                     if (window.matchMedia('(hover: none)').matches && timer.elapsedTime > 0) {
                                         e.currentTarget.classList.add('has-elapsed-time');
                                     }
@@ -599,69 +604,68 @@
                                 </form>
                             </div>
                         </div>
-                )}
+                    )}
 
-                {showResetConfirmation && (
-                    <div className="modal">
-                        <div className="modal-content">
-                            <h2>Reset All Timers?</h2>
-                            <p style={{color: '#888', marginBottom: '20px'}}>
-                                This will reset all active timers to zero. This action cannot be undone.
-                            </p>
-                            <div className="button-group">
-                                <button
-                                    className="button cancel"
-                                    onClick={() => setShowResetConfirmation(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="button delete"
-                                    onClick={() => {
-                                        resetAllTimers();
-                                        setShowResetConfirmation(false);
-                                    }}
-                                >
-                                    Reset
-                                </button>
+                    {showResetConfirmation && (
+                        <div className="modal">
+                            <div className="modal-content">
+                                <h2>Reset All Timers?</h2>
+                                <p style={{color: '#888', marginBottom: '20px'}}>
+                                    This will reset all active timers to zero. This action cannot be undone.
+                                </p>
+                                <div className="button-group">
+                                    <button
+                                        className="button cancel"
+                                        onClick={() => setShowResetConfirmation(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="button delete"
+                                        onClick={() => {
+                                            resetAllTimers();
+                                            setShowResetConfirmation(false);
+                                        }}
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {timerToDelete && (
-                    <div className="modal">
-                        <div className="modal-content">
-                            <h2>Delete Timer?</h2>
-                            <p style={{color: '#888', marginBottom: '20px'}}>
-                                This will permanently delete the timer. This action cannot be undone.
-                            </p>
-                            <div className="button-group">
-                                <button
-                                    className="button cancel"
-                                    onClick={() => setTimerToDelete(null)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="button delete"
-                                    onClick={() => {
-                                        setTimers(timers.filter(timer => timer.id === timerToDelete ? false : true));
-                                        setTimerToDelete(null);
-                                    }}
-                                >
-                                    Delete
-                                </button>
+                    {timerToDelete && (
+                        <div className="modal">
+                            <div className="modal-content">
+                                <h2>Delete Timer?</h2>
+                                <p style={{color: '#888', marginBottom: '20px'}}>
+                                    This will permanently delete the timer. This action cannot be undone.
+                                </p>
+                                <div className="button-group">
+                                    <button
+                                        className="button cancel"
+                                        onClick={() => setTimerToDelete(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="button delete"
+                                        onClick={() => {
+                                            setTimers(timers.filter(timer => timer.id === timerToDelete ? false : true));
+                                            setTimerToDelete(null);
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        );
-    }
+                    )}
+                </div>
+            );
+        }
 
-    // Render the App
-    ReactDOM.render(<App />, document.getElementById('root'));
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
